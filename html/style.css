@@ -1,0 +1,23 @@
+:root {
+    padding: 0;
+    margin: 0;
+    text-align: center;
+}
+
+.main {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+.main > div {
+    border: 1px solid black;
+    padding: 4px 12px;
+    border-radius: 4px;
+    box-shadow: 4px 6px 10px gray;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}

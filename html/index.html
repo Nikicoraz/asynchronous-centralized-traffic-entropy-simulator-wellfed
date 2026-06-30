@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Traffic simulator</title>
+        <!-- Prefisso /html per il path dei file statici -->
+        <link rel="stylesheet" href="/html/style.css" />
+    </head>
+    <body>
+        <h1>Wellfed traffic simulator</h1>
+        <div class="main">
+            <div>
+                <h3>Instant traffic</h3>
+                <form action="/instant_requests" , method="POST">
+                    <input
+                        type="number"
+                        placeholder="Number of requests"
+                        name="requests"
+                    />
+                    <input type="submit" />
+                </form>
+            </div>
+            <div>
+                <h3>Sustained traffic</h3>
+                <form action="/sustained_requests" method="POST">
+                    <input
+                        type="number"
+                        placeholder="Number of requests per second"
+                        name="requests"
+                    />
+                    <input
+                        type="number"
+                        placeholder="Duration (seconds)"
+                        name="duration"
+                    />
+                    <input type="submit" />
+                </form>
+            </div>
+            <div>
+                <h3>Distributed traffic over time</h3>
+                <form action="/distributed_requests" method="POST">
+                    <input
+                        type="number"
+                        placeholder="Total number of requests"
+                        name="requests"
+                    />
+                    <input
+                        type="number"
+                        placeholder="Time over which to send the requests (seconds)"
+                        name="duration"
+                    />
+                    <input type="submit" />
+                </form>
+            </div>
+        </div>
+    </body>
+</html>
