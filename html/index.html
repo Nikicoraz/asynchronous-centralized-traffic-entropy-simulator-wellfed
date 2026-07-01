@@ -11,48 +11,63 @@
         <h1>Wellfed traffic simulator</h1>
         <div class="main">
             <div>
-                <h3>Instant traffic</h3>
-                <form action="/instant_requests" , method="POST">
-                    <input
-                        type="number"
-                        placeholder="Number of requests"
-                        name="requests"
-                    />
-                    <input type="submit" />
-                </form>
+                <h3>Simulator settings</h3>
+                <label for="auth">User JWT</label>
+                <input id="auth" type="text" placeholder="Token" />
+                <label for="url">Request URL</label>
+                <input id="url" type="text" placeholder="/" />
+                <label for="target">Target component</label>
+                <select id="target">
+                    <option value="backend">Backend</option>
+                    <option value="frontend">Frontend</option>
+                </select>
             </div>
-            <div>
-                <h3>Sustained traffic</h3>
-                <form action="/sustained_requests" method="POST">
-                    <input
-                        type="number"
-                        placeholder="Number of requests per second"
-                        name="requests"
-                    />
-                    <input
-                        type="number"
-                        placeholder="Duration (seconds)"
-                        name="duration"
-                    />
-                    <input type="submit" />
-                </form>
-            </div>
-            <div>
-                <h3>Distributed traffic over time</h3>
-                <form action="/distributed_requests" method="POST">
-                    <input
-                        type="number"
-                        placeholder="Total number of requests"
-                        name="requests"
-                    />
-                    <input
-                        type="number"
-                        placeholder="Time over which to send the requests (seconds)"
-                        name="duration"
-                    />
-                    <input type="submit" />
-                </form>
+            <div class="requests">
+                <div>
+                    <h3>Instant traffic</h3>
+                    <form action="/instant_requests" , method="POST">
+                        <input
+                            type="number"
+                            placeholder="Number of requests"
+                            name="requests"
+                        />
+                        <input type="submit" />
+                    </form>
+                </div>
+                <div>
+                    <h3>Sustained traffic</h3>
+                    <form action="/sustained_requests" method="POST">
+                        <input
+                            type="number"
+                            placeholder="Number of requests per second"
+                            name="requests"
+                        />
+                        <input
+                            type="number"
+                            placeholder="Duration (seconds)"
+                            name="duration"
+                        />
+                        <input type="submit" />
+                    </form>
+                </div>
+                <div>
+                    <h3>Distributed traffic over time</h3>
+                    <form action="/distributed_requests" method="POST">
+                        <input
+                            type="number"
+                            placeholder="Total number of requests"
+                            name="requests"
+                        />
+                        <input
+                            type="number"
+                            placeholder="Time over which to send the requests (seconds)"
+                            name="duration"
+                        />
+                        <input type="submit" />
+                    </form>
+                </div>
             </div>
         </div>
+        <script src="/html/authMangerInjector.js"></script>
     </body>
 </html>

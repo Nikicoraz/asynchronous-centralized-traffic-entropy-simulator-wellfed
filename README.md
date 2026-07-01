@@ -11,4 +11,5 @@ Name        | Default                 | Description
 ------------|-------------------------|------------
 SIM_PORT    | 8050                    | The port of the web server
 DEBUG       | False                   | If set to `True` enables hot reloading of the python code
-WELLFED_URL | `http://localhost:5173` | The url of the wellfed frontend
+FRONTEND_URL| `http://localhost:5173` | The url of the wellfed frontend
+BACKEND_URL | `http://localhost:8000/api/v1` | The url of the wellfed backend

@@ -1,23 +1,71 @@
 :root {
+    margin: 0;
     padding: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
     margin: 0;
     text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .main {
     display: flex;
-    flex-direction: row;
-    justify-content: space-evenly;
+    flex-direction: column;
+    gap: 16px;
+    width: min(60dvw, 900px);
+    margin: 32px auto;
 }
-.main > div {
-    border: 1px solid black;
-    padding: 4px 12px;
+
+.main > div:first-child {
+    display: grid;
+    grid-template-columns: 15% 1fr;
+    gap: 12px;
+    align-items: center;
+    text-align: left;
+    padding-bottom: 12px;
+}
+
+.main > div:first-child > h3 {
+    grid-column: 1 / -1;
+    margin: 0 0 8px;
+    text-align: center;
+}
+
+.main > div:first-child > input,
+.main > div:first-child > select {
+    height: 40px;
+    padding: 0 8px;
     border-radius: 4px;
-    box-shadow: 4px 6px 10px gray;
+}
+
+.main div:not(:has(div)) {
+    padding: 8px 12px;
+    border: 1px solid;
+    border-radius: 6px;
+    box-shadow: 3px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.requests {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 form {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
+}
+
+button {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 4px;
+    cursor: pointer;
 }

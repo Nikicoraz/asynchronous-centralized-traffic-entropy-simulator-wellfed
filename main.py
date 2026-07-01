@@ -1,18 +1,55 @@
 import os
+from enum import Enum
 
 import requests as req
 import uvicorn
 from fastapi import FastAPI
 from fastapi.param_functions import Form
 from fastapi.responses import HTMLResponse
-from fastapi.routing import FormData
 from starlette.responses import FileResponse
 from starlette.staticfiles import StaticFiles
 
-URL = os.environ.get(key="WELLFED_URL", default="http://localhost:5173")
+FRONTEND_URL = os.environ.get(key="FRONTEND_URL", default="http://localhost:5173")
+BACKEND_URL = os.environ.get(key="BACKEND_URL", default="http://localhost:8000/api/v1")
 
 app = FastAPI()
 app.mount("/html", StaticFiles(directory="html", html=True), name="html")
+
+
+class ReqTarget(Enum):
+    BACKEND = BACKEND_URL
+    FRONTEND = FRONTEND_URL
+
+
+class ReqType(Enum):
+    GET = 1
+    POST = 2
+    PUT = 3
+    DELETE = 4
+
+def strTargetToEnum(target: str) -> ReqTarget:
+    if target == "frontend":
+        return ReqTarget.FRONTEND
+    elif target == "backend":
+        return ReqTarget.BACKEND
+
+    raise ModuleNotFoundError
+
+# Funzione generica per fare richieste con parametri comuni come jwt e payload per POST ecc...
+async def makeRequest(
+    type: ReqType, target_url: ReqTarget, path: str, jwt: str = "", payload={}
+) -> req.Response:
+    headers = {}
+
+    if jwt:
+        headers["Authorization"] = f"Bearer {jwt}"
+
+    finalUrl = f"{target_url.value}{path}"
+
+    if type == ReqType.GET:
+        return req.get(finalUrl, headers=headers)
+
+    raise NotImplementedError("Request type not yet implemented")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -21,20 +58,22 @@ async def root():
 
 
 @app.post("/instant_requests")
-async def instant(requests: int = Form(title="requests")):
+async def instant(requests: int = Form(), jwt: str = Form(), url: str = Form(), target: str = Form()):
     try:
-        # Invia "requests" richieste all'url base, si potrebbe modificare per indicare anche un URL a cui inviare le richieste
-        # oltre a che gestire i path con autenticazione ecc... Questa è solo una prova per vedere come funziona
-        for i in range(0, requests):
-            response = req.get(URL)
+        for __ in range(0, requests):
+            _ = makeRequest(
+                ReqType.GET, strTargetToEnum(target), url, jwt=jwt
+            )
 
             # Decommentare le linee seguenti per vedere il codice di stato e il codice html della risposta
+            # response = await _
             # print(response.status_code)
+            # print(response.request.headers)
             # print(response.text)
 
     except Exception as e:
         print(e)
-        return "Cannot connect to URL"
+        return f"Cannot connect to URL: {e}"
     return "Requests queued"
 
 
