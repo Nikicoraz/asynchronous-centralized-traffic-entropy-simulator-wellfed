@@ -1,3 +1,4 @@
+import asyncio
 import os
 from enum import Enum
 
@@ -27,6 +28,7 @@ class ReqType(Enum):
     PUT = 3
     DELETE = 4
 
+
 def strTargetToEnum(target: str) -> ReqTarget:
     if target == "frontend":
         return ReqTarget.FRONTEND
@@ -34,6 +36,7 @@ def strTargetToEnum(target: str) -> ReqTarget:
         return ReqTarget.BACKEND
 
     raise ModuleNotFoundError
+
 
 # Funzione generica per fare richieste con parametri comuni come jwt e payload per POST ecc...
 async def makeRequest(
@@ -58,11 +61,13 @@ async def root():
 
 
 @app.post("/instant_requests")
-async def instant(requests: int = Form(), jwt: str = Form(), url: str = Form(), target: str = Form()):
+async def instant(
+    requests: int = Form(), jwt: str = Form(), url: str = Form(), target: str = Form()
+):
     try:
         for __ in range(0, requests):
-            _ = makeRequest(
-                ReqType.GET, strTargetToEnum(target), url, jwt=jwt
+            _ = asyncio.ensure_future(
+                makeRequest(ReqType.GET, strTargetToEnum(target), url, jwt=jwt)
             )
 
             # Decommentare le linee seguenti per vedere il codice di stato e il codice html della risposta
@@ -74,6 +79,36 @@ async def instant(requests: int = Form(), jwt: str = Form(), url: str = Form(), 
     except Exception as e:
         print(e)
         return f"Cannot connect to URL: {e}"
+    return "Requests queued"
+
+
+@app.post("/sustained_requests")
+async def sustained(
+    requests: int = Form(),
+    duration: int = Form(),
+    jwt: str = Form(),
+    url: str = Form(),
+    target: str = Form(),
+):
+    try:
+
+        async def send_requests():
+            for _ in range(0, duration):
+                for __ in range(0, requests):
+                    ___ = asyncio.ensure_future(
+                        makeRequest(ReqType.GET, strTargetToEnum(target), url, jwt=jwt)
+                    )
+
+                    # response = await ___
+                    # print(response.status_code)
+
+                await asyncio.sleep(1)
+
+        # Esegui l'invio delle richieste in modo asincrono per dare la risposta al browser
+        asyncio.get_event_loop().create_task(send_requests())
+    except Exception as e:
+        print(e)
+        return f"Error: {e}"
     return "Requests queued"
 
 
