@@ -1,6 +1,5 @@
 const jwtInput = document.getElementById("auth");
-const methodInput = document.getElementById("method");
-const endpointInput = document.getElementById("endpoint");
+const operationInput = document.getElementById("operation");
 const errorRateInput = document.getElementById("error_rate");
 
 // Se l'utente aveva già inserito il jwt rimettilo nell'input
@@ -11,18 +10,11 @@ if (jwt) {
   jwt = "";
 }
 
-let method = localStorage.getItem("method");
-if (method) {
-    methodInput.value = method;
+let operation = localStorage.getItem("operation");
+if (operation) {
+    operationInput.value = operation;
 } else {
-    method = "GET";
-}
-
-let endpoint = localStorage.getItem("endpoint");
-if (endpoint) {
-  endpointInput.value = endpoint;
-} else {
-  endpoint = "/";
+    operation = "RegisterClient";
 }
 
 let errorRate = localStorage.getItem("errorRate");
@@ -38,19 +30,14 @@ jwtInput.addEventListener("change", (e) => {
   jwt = jwtInput.value;
 });
 
-methodInput.addEventListener("change", (e) => {
-    localStorage.setItem("method", methodInput.value);
-    method = methodInput.value;
-});
-
-endpointInput.addEventListener("change", (e) => {
-  localStorage.setItem("endpoint", endpointInput.value);
-  endpoint = endpointInput.value;
+operationInput.addEventListener("change", (e) => {
+    localStorage.setItem("operation", operationInput.value);
+    operation = operationInput.value;
 });
 
 errorRateInput.addEventListener("change", (e) => {
     localStorage.setItem("errorRate", errorRateInput.value);
-    errorRate = errorRate.value;
+    errorRate = errorRateInput.value;
 });
 
 // Intercetta richieste form
@@ -59,8 +46,9 @@ Array.from(document.getElementsByTagName("form")).forEach((form) => {
     e.preventDefault();
 
     e.formData.append("jwt", jwt);
-    e.formData.append("method", method);
-    e.formData.append("endpoint", endpoint);
-    e.formData.append("errorRate", errorRate);
+    e.formData.append("operation", operation);
+    e.formData.append("errorRate", parseInt(errorRate));
+    const parsedErrorRate = parseInt(errorRate, 10);
+    e.formData.append("errorRate", isNaN(parsedErrorRate) ? 0 : parsedErrorRate);
   });
 });

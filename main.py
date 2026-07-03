@@ -1,5 +1,7 @@
 import asyncio
 import os
+import time
+
 from enum import Enum
 
 import requests as req
@@ -16,41 +18,47 @@ BACKEND_URL = os.environ.get(key="BACKEND_URL", default="http://localhost:8000/a
 app = FastAPI()
 app.mount("/html", StaticFiles(directory="html", html=True), name="html")
 
-
+# Enum per i target
 class ReqTarget(Enum):
     BACKEND = BACKEND_URL
     FRONTEND = FRONTEND_URL
 
-
+# Enum per i verbi HTTP
 class ReqType(Enum):
     GET = 1
     POST = 2
     PUT = 3
     DELETE = 4
 
+# Enum per gli endpoint
 class ReqEndpoint(Enum):
-    REGISTRATION_CLINET = "/register/client"
-    REGISTRATION_MERCHANT = "/register/merchant"
+    REGISTRATION_CLIENT = "/register/client"
     LOGIN = "/login"
     TRANSACTION_BEGIN = "/QRCodes/assignPoints"
     TRANSACTION_END = "/QRCodes/scanned"
 
-def strTargetToEnum(target: str) -> ReqTarget:
-    if target == "frontend":
-        return ReqTarget.FRONTEND
-    elif target == "backend":
-        return ReqTarget.BACKEND
+# Funzione che data un'operazione ricevuta dall form HTML ritorna una tupla, il verbo HTTP e l'endpoint relativo
+def strOperationToEnums(operation: str) -> (ReqType, ReqEndpoint):
+    match operation:
+        case "RegisterClient":
+            return (ReqType.POST, ReqEndpoint.REGISTRATION_CLIENT)
+        case "Login":
+            return (ReqType.POST, ReqEndpoint.LOGIN)
+        case "BeginTransaction":
+            return (ReqType.POST, ReqEndpoint.TRANSACTION_BEGIN)
+        case "EndTransaction":
+            return (ReqType.POST, ReqEndpoint.TRANSACTION_END)
 
     raise ModuleNotFoundError
 
-
 # Funzione generica per fare richieste con parametri comuni come jwt e payload per POST ecc...
 async def makeRequest(
-    type: ReqType, 
-    target_url: ReqTarget, 
-    path: ReqEndpoint, 
+    type: ReqType,
+    target: ReqTarget, 
+    endpoint: ReqEndpoint, 
+    index: int,
     jwt: str = "", 
-    payload={},
+    payload: dict = None,
     errorRate: int = 0
 ) -> req.Response:
     headers = {}
@@ -58,10 +66,90 @@ async def makeRequest(
     if jwt:
         headers["Authorization"] = f"Bearer {jwt}"
 
-    finalUrl = f"{target_url.value}{path.value}"
+    finalUrl = f"{target.value}{endpoint.value}"
+    
+    # Controllo se l'url fa parte dei predefiniti, in tale caso applicare gli errrori
+    error_trigger = random.randint(1, 100) <= errorRate
+    match endpoint:
+        case ReqEndpoint.REGISTRATION_CLIENT:
+            if error_trigger:
+                error_type = random.choice(["invalid_payload", "email_already_in_use"])
+                match error_type:
+                    case "invalid_payload":
+                        # L'errore con payload invalido è implementato lasciando vuoto lo username, questo genererà un errore 400
+                        payload = {
+                            "username": "",
+                            "email": f"email{time.time_ns()}_{index}@gmail.com",
+                            "password": "password123"
+                        }
+                    case "email_already_in_use":
+                        # L'errore con email già in uso è implementato inserendo "mariorossi@gmail.com" come email, questo genererà un errore 409
+                        payload = {
+                            "username": f"username{time.time_ns()}_{index}",
+                            "email": "mariorossi@gmail.com",
+                            "password": "password123"
+                        }
+            else:
+                payload = {
+                    "username": f"username{time.time_ns()}_{index}",
+                    "email": f"email{time.time_ns()}_{index}@gmail.com",
+                    "password": "password123"
+                }
 
+        case ReqEndpoint.LOGIN:
+            if error_trigger:
+                # L'errore con credeniali errate è implementato lasciando vuota la password, questo genererà un errore 401
+                payload = {
+                    "username": "inesistente",
+                    "email": "inesistente@gmail.com",
+                    "password": ""
+                }
+            else:
+                payload = {
+                    "username": "MRossi",
+                    "email": "mariorossi@gmail.com",
+                    "password": "password123"
+                }
+
+
+        case ReqEndpoint.TRANSACTION_BEGIN:
+            if error_trigger:
+                error_type = random.choice(["invalid_product", "no_auth"])
+                match error_type:
+                    case "invalid_product":
+                        # L'errore di prodotto invalido è implementato inserendo un productID inesistente, questo genererà un errore 400
+                        payload = [
+                            {
+                                "productID": "1", # Qui va inserito l'id del prodotto che mettiamo nel DB
+                                "quantity": 1
+                            }
+                        ]
+                    case "no_auth":
+                        # L'errore di mancata autenticazione è implementato annullando il jwt, questo genererà un errore 401
+                        jwt = ""
+                        payload = [
+                            {
+                                "productID": "1", # Qui va inserito l'id del prodotto che mettiamo nel DB
+                                "quantity": 1
+                            }
+                        ]
+            else:
+                payload = [
+                    {
+                        "productID": "1", # Qui va inserito l'id del prodotto che mettiamo nel DB
+                        "quantity": 1
+                    }
+                ]
+
+        case ReqEndpoint.TRANSACTION_END:
+            print("EndTransaction") 
+            pass
+
+    # Chiamata in base al metodo
     if type == ReqType.GET:
         return req.get(finalUrl, headers=headers)
+    elif type == ReqType.POST:
+        return req.post(finalUrl, headers=headers, json=payload)
 
     raise NotImplementedError("Request type not yet implemented")
 
@@ -75,14 +163,14 @@ async def root():
 async def instant(
     requests: int = Form(), 
     jwt: str = Form(),
-    url: str = Form(), 
-    target: str = Form(),
+    operation: str = Form(),
     errorRate: int = Form(),
 ):
     try:
-        for __ in range(0, requests):
+        for index in range(0, requests):
+            (method, endpoint) = strOperationToEnums(operation)
             _ = asyncio.ensure_future(
-                makeRequest(ReqType.GET, strTargetToEnum(target), url, jwt=jwt, errorRate=errorRate)
+                makeRequest(method, ReqTarget.BACKEND, endpoint, index, jwt=jwt, errorRate=errorRate)
             )
 
             # Decommentare le linee seguenti per vedere il codice di stato e il codice html della risposta
@@ -102,8 +190,8 @@ async def sustained(
     requests: int = Form(),
     duration: int = Form(),
     jwt: str = Form(),
-    url: str = Form(),
-    target: str = Form(),
+    operation: str = Form(),
+    errorRate: int = Form(),
 ):
     try:
 
@@ -111,7 +199,7 @@ async def sustained(
             for _ in range(0, duration):
                 for __ in range(0, requests):
                     ___ = asyncio.ensure_future(
-                        makeRequest(ReqType.GET, strTargetToEnum(target), url, jwt=jwt)
+                        makeRequest(strMethodToEnum(method), strTargetToEnum(target), url, jwt=jwt)
                     )
 
                     # response = await ___
