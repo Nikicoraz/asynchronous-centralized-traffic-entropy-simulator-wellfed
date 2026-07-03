@@ -14,13 +14,10 @@
                 <h3>Simulator settings</h3>
                 <label for="auth">User JWT</label>
                 <input id="auth" type="text" placeholder="Token" />
-                <label for="url">Request URL</label>
-                <input id="url" type="text" placeholder="/" />
-                <label for="target">Target component</label>
-                <select id="target">
-                    <option value="backend">Backend</option>
-                    <option value="frontend">Frontend</option>
-                </select>
+                <label for="endpoint">Request endpoint</label>
+                <input id="endpoint" type="text" placeholder="/" />
+                <label for="error_rate">% Errore</label>
+                <input id="error_rate" type="number" min="1" max="100" placeholder="0"/>
             </div>
             <div class="requests">
                 <div>

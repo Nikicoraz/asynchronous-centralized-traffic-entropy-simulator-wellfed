@@ -1,41 +1,43 @@
-const auth = document.getElementById("auth");
-const urlInput = document.getElementById("url");
-const targetInput = document.getElementById("target");
+const jwtInput = document.getElementById("auth");
+const endpointInput = document.getElementById("endpoint");
+const errorRateInput = document.getElementById("error_rate");
 
 // Se l'utente aveva già inserito il jwt rimettilo nell'input
 let jwt = localStorage.getItem("jwt");
 if (jwt) {
-  auth.value = jwt;
+  jwtInput.value = jwt;
+} else {
+  jwt = "";
 }
 
-let url = localStorage.getItem("url");
-if (url) {
-  urlInput.value = url;
+let endpoint = localStorage.getItem("endpoint");
+if (endpoint) {
+  endpointInput.value = endpoint;
 } else {
-  url = "/";
+  endpoint = "/";
 }
 
-let target = localStorage.getItem("target");
-if (target) {
-  targetInput.value = target;
+let errorRate = localStorage.getItem("errorRate");
+if (errorRate) {
+    errorRateInput.value = errorRate;
 } else {
-  target = "backend";
+    errorRateInput.value = 0;
 }
 
 // Salva solo quando cambia il focus
-auth.addEventListener("change", (e) => {
-  localStorage.setItem("jwt", auth.value);
-  jwt = auth.value;
+jwtInput.addEventListener("change", (e) => {
+  localStorage.setItem("jwt", jwtInput.value);
+  jwt = jwtInput.value;
 });
 
-urlInput.addEventListener("change", (e) => {
-  localStorage.setItem("url", urlInput.value);
-  url = urlInput.value;
+endpointInput.addEventListener("change", (e) => {
+  localStorage.setItem("endpoint", endpointInput.value);
+  endpoint = endpointInput.value;
 });
 
-targetInput.addEventListener("change", (e) => {
-  localStorage.setItem("target", targetInput.value);
-  target = targetInput.value;
+errorRateInput.addEventListener("change", (e) => {
+    localStorage.setItem("errorRate", errorRateInput.value);
+    errorRate = errorRate.value;
 });
 
 // Intercetta richieste form
@@ -44,7 +46,7 @@ Array.from(document.getElementsByTagName("form")).forEach((form) => {
     e.preventDefault();
 
     e.formData.append("jwt", jwt);
-    e.formData.append("url", url);
-    e.formData.append("target", target);
+    e.formData.append("endpoint", endpoint);
+    e.formData.append("errorRate", errorRate);
   });
 });
