@@ -1,4 +1,5 @@
 const jwtInput = document.getElementById("auth");
+const methodInput = document.getElementById("method");
 const endpointInput = document.getElementById("endpoint");
 const errorRateInput = document.getElementById("error_rate");
 
@@ -8,6 +9,13 @@ if (jwt) {
   jwtInput.value = jwt;
 } else {
   jwt = "";
+}
+
+let method = localStorage.getItem("method");
+if (method) {
+    methodInput.value = method;
+} else {
+    method = "GET";
 }
 
 let endpoint = localStorage.getItem("endpoint");
@@ -30,6 +38,11 @@ jwtInput.addEventListener("change", (e) => {
   jwt = jwtInput.value;
 });
 
+methodInput.addEventListener("change", (e) => {
+    localStorage.setItem("method", methodInput.value);
+    method = methodInput.value;
+});
+
 endpointInput.addEventListener("change", (e) => {
   localStorage.setItem("endpoint", endpointInput.value);
   endpoint = endpointInput.value;
@@ -46,6 +59,7 @@ Array.from(document.getElementsByTagName("form")).forEach((form) => {
     e.preventDefault();
 
     e.formData.append("jwt", jwt);
+    e.formData.append("method", method);
     e.formData.append("endpoint", endpoint);
     e.formData.append("errorRate", errorRate);
   });

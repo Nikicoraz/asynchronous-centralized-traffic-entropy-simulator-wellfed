@@ -14,8 +14,19 @@
                 <h3>Simulator settings</h3>
                 <label for="auth">User JWT</label>
                 <input id="auth" type="text" placeholder="Token" />
+
+                <label for="method">HTTP Method</label>
+                <select id="method">
+                    <option value="GET" selected="selected">GET</option>
+                    <option value="GET" selected="selected">POST</option>
+                    <option value="GET" selected="selected">PUT</option>
+                    <option value="GET" selected="selected">DELETE</option>
+                    <option value="GET" selected="selected">PATCH</option>
+                </select>
+
                 <label for="endpoint">Request endpoint</label>
                 <input id="endpoint" type="text" placeholder="/" />
+
                 <label for="error_rate">% Errore</label>
                 <input id="error_rate" type="number" min="1" max="100" placeholder="0"/>
             </div>

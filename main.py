@@ -28,6 +28,12 @@ class ReqType(Enum):
     PUT = 3
     DELETE = 4
 
+class ReqEndpoint(Enum):
+    REGISTRATION_CLINET = "/register/client"
+    REGISTRATION_MERCHANT = "/register/merchant"
+    LOGIN = "/login"
+    TRANSACTION_BEGIN = "/QRCodes/assignPoints"
+    TRANSACTION_END = "/QRCodes/scanned"
 
 def strTargetToEnum(target: str) -> ReqTarget:
     if target == "frontend":
@@ -40,14 +46,19 @@ def strTargetToEnum(target: str) -> ReqTarget:
 
 # Funzione generica per fare richieste con parametri comuni come jwt e payload per POST ecc...
 async def makeRequest(
-    type: ReqType, target_url: ReqTarget, path: str, jwt: str = "", payload={}
+    type: ReqType, 
+    target_url: ReqTarget, 
+    path: ReqEndpoint, 
+    jwt: str = "", 
+    payload={},
+    errorRate: int = 0
 ) -> req.Response:
     headers = {}
 
     if jwt:
         headers["Authorization"] = f"Bearer {jwt}"
 
-    finalUrl = f"{target_url.value}{path}"
+    finalUrl = f"{target_url.value}{path.value}"
 
     if type == ReqType.GET:
         return req.get(finalUrl, headers=headers)
@@ -62,12 +73,16 @@ async def root():
 
 @app.post("/instant_requests")
 async def instant(
-    requests: int = Form(), jwt: str = Form(), url: str = Form(), target: str = Form()
+    requests: int = Form(), 
+    jwt: str = Form(),
+    url: str = Form(), 
+    target: str = Form(),
+    errorRate: int = Form(),
 ):
     try:
         for __ in range(0, requests):
             _ = asyncio.ensure_future(
-                makeRequest(ReqType.GET, strTargetToEnum(target), url, jwt=jwt)
+                makeRequest(ReqType.GET, strTargetToEnum(target), url, jwt=jwt, errorRate=errorRate)
             )
 
             # Decommentare le linee seguenti per vedere il codice di stato e il codice html della risposta
