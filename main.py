@@ -51,12 +51,16 @@ def strOperationToEnums(operation: str) -> (ReqType, ReqEndpoint):
 
     raise ModuleNotFoundError
 
+def completeTransaction(transaction_token: str, jwt: str) {
+    req.post(ReqType.POST, ReqTarget.BACKEND, ReqEndpoint.TRANSACTION_END, jwt=jwt, payload={ "token": transaction_token })
+}
+
 # Funzione generica per fare richieste con parametri comuni come jwt e payload per POST ecc...
 async def makeRequest(
     type: ReqType,
     target: ReqTarget, 
     endpoint: ReqEndpoint, 
-    index: int,
+    index: int = 0,
     jwt: str = "", 
     payload: dict = None,
     errorRate: int = 0
@@ -141,15 +145,17 @@ async def makeRequest(
                     }
                 ]
 
-        case ReqEndpoint.TRANSACTION_END:
-            print("EndTransaction") 
-            pass
-
     # Chiamata in base al metodo
     if type == ReqType.GET:
         return req.get(finalUrl, headers=headers)
     elif type == ReqType.POST:
-        return req.post(finalUrl, headers=headers, json=payload)
+        if endpoint != ReqEndpoint.TRANSACTION_BEGIN:
+            return req.post(finalUrl, headers=headers, json=payload)
+        
+        # Controllare se è un TRANSACTION_BEGIN e allora mettere un timeout con un transaction END e passargli come payload il token ricevuto
+        else:
+            transaction_token = req.post(finalUrl, headers=headers, json=payload).text
+            _ = asyncio.ensure_future(completeTransaction(transaction_token))
 
     raise NotImplementedError("Request type not yet implemented")
 
