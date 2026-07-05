@@ -1,6 +1,7 @@
 import asyncio
 import os
 import time
+import random
 
 from enum import Enum
 
@@ -51,9 +52,10 @@ def strOperationToEnums(operation: str) -> (ReqType, ReqEndpoint):
 
     raise ModuleNotFoundError
 
-def completeTransaction(transaction_token: str, jwt: str) {
+async def completeTransaction(transaction_token: str, jwt: str):
+    delay = random.randint(1, 5)
+    await asyncio.sleep(delay)
     req.post(ReqType.POST, ReqTarget.BACKEND, ReqEndpoint.TRANSACTION_END, jwt=jwt, payload={ "token": transaction_token })
-}
 
 # Funzione generica per fare richieste con parametri comuni come jwt e payload per POST ecc...
 async def makeRequest(
@@ -180,10 +182,10 @@ async def instant(
             )
 
             # Decommentare le linee seguenti per vedere il codice di stato e il codice html della risposta
-            # response = await _
-            # print(response.status_code)
-            # print(response.request.headers)
-            # print(response.text)
+            response = await _
+            print(response.status_code)
+            print(response.request.headers)
+            print(response.text)
 
     except Exception as e:
         print(e)
