@@ -55,7 +55,18 @@ def strOperationToEnums(operation: str) -> (ReqType, ReqEndpoint):
 async def completeTransaction(transaction_token: str, jwt: str):
     delay = random.randint(1, 5)
     await asyncio.sleep(delay)
-    req.post(ReqType.POST, ReqTarget.BACKEND, ReqEndpoint.TRANSACTION_END, jwt=jwt, payload={ "token": transaction_token })
+    
+    headers = {}
+    if jwt:
+        headers["Authorization"] = f"Bearer {jwt}"
+        
+    finalUrl = f"{BACKEND_URL}{ReqEndpoint.TRANSACTION_END.value}"
+    
+    try:
+        req.post(finalUrl, headers=headers, json={"token": transaction_token})
+    except Exception as e:
+        print(f"Error while closing pending transaction: {e}")
+
 
 # Funzione generica per fare richieste con parametri comuni come jwt e payload per POST ecc...
 async def makeRequest(
@@ -86,63 +97,49 @@ async def makeRequest(
                         payload = {
                             "username": "",
                             "email": f"email{time.time_ns()}_{index}@gmail.com",
-                            "password": "password123"
+                            "password": "Password123!"
                         }
                     case "email_already_in_use":
                         # L'errore con email già in uso è implementato inserendo "mariorossi@gmail.com" come email, questo genererà un errore 409
                         payload = {
                             "username": f"username{time.time_ns()}_{index}",
                             "email": "mariorossi@gmail.com",
-                            "password": "password123"
+                            "password": "Password123!"
                         }
             else:
                 payload = {
                     "username": f"username{time.time_ns()}_{index}",
                     "email": f"email{time.time_ns()}_{index}@gmail.com",
-                    "password": "password123"
+                    "password": "Password123!"
                 }
 
         case ReqEndpoint.LOGIN:
             if error_trigger:
                 # L'errore con credeniali errate è implementato lasciando vuota la password, questo genererà un errore 401
                 payload = {
-                    "username": "inesistente",
                     "email": "inesistente@gmail.com",
                     "password": ""
                 }
             else:
                 payload = {
-                    "username": "MRossi",
-                    "email": "mariorossi@gmail.com",
-                    "password": "password123"
+                    "email": "cliente1@gmail.com",
+                    "password": "Password123!"
                 }
 
 
         case ReqEndpoint.TRANSACTION_BEGIN:
             if error_trigger:
-                error_type = random.choice(["invalid_product", "no_auth"])
-                match error_type:
-                    case "invalid_product":
-                        # L'errore di prodotto invalido è implementato inserendo un productID inesistente, questo genererà un errore 400
-                        payload = [
-                            {
-                                "productID": "1", # Qui va inserito l'id del prodotto che mettiamo nel DB
-                                "quantity": 1
-                            }
-                        ]
-                    case "no_auth":
-                        # L'errore di mancata autenticazione è implementato annullando il jwt, questo genererà un errore 401
-                        jwt = ""
-                        payload = [
-                            {
-                                "productID": "1", # Qui va inserito l'id del prodotto che mettiamo nel DB
-                                "quantity": 1
-                            }
-                        ]
+                # L'errore di prodotto invalido è implementato inserendo un productID inesistente, questo genererà un errore 400
+                payload = [
+                    {
+                        "productID": "1", # Qui va inserito l'id del prodotto che non e' presente nel DB
+                        "quantity": 1
+                    }
+                ]
             else:
                 payload = [
                     {
-                        "productID": "1", # Qui va inserito l'id del prodotto che mettiamo nel DB
+                        "productID": "6a4a919a356925890dcfc66e", # Qui va inserito l'id del prodotto che mettiamo nel DB
                         "quantity": 1
                     }
                 ]
@@ -151,15 +148,19 @@ async def makeRequest(
     if type == ReqType.GET:
         return req.get(finalUrl, headers=headers)
     elif type == ReqType.POST:
+
         if endpoint != ReqEndpoint.TRANSACTION_BEGIN:
             return req.post(finalUrl, headers=headers, json=payload)
-        
-        # Controllare se è un TRANSACTION_BEGIN e allora mettere un timeout con un transaction END e passargli come payload il token ricevuto
         else:
-            transaction_token = req.post(finalUrl, headers=headers, json=payload).text
-            _ = asyncio.ensure_future(completeTransaction(transaction_token))
+            response_begin = req.post(finalUrl, headers=headers, json=payload)
+            
+            if response_begin.status_code == 200:
+                transaction_token = response_begin.text
+                asyncio.create_task(completeTransaction(transaction_token, jwt))
+            
+            return response_begin
 
-    raise NotImplementedError("Request type not yet implemented")
+        raise NotImplementedError("Request type not yet implemented")
 
 
 @app.get("/", response_class=HTMLResponse)
