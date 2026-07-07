@@ -206,15 +206,16 @@ async def sustained(
 
         async def send_requests():
             for _ in range(0, duration):
-                for __ in range(0, requests):
-                    ___ = asyncio.ensure_future(
-                        makeRequest(strMethodToEnum(method), strTargetToEnum(target), url, jwt=jwt)
+                for index in range(0, requests):
+                    (method, endpoint) = strOperationToEnums(operation)
+                    __ = asyncio.ensure_future(
+                        makeRequest(method, ReqTarget.BACKEND, endpoint, index, jwt=jwt, errorRate=errorRate)
                     )
 
-                    # response = await ___
+                    # response = await __
                     # print(response.status_code)
 
-                await asyncio.sleep(1)
+                await asyncio.sleep(1 / requests)
 
         # Esegui l'invio delle richieste in modo asincrono per dare la risposta al browser
         asyncio.get_event_loop().create_task(send_requests())
