@@ -2,6 +2,7 @@ import asyncio
 import os
 import time
 import random
+import io
 
 from enum import Enum
 
@@ -15,6 +16,36 @@ from starlette.staticfiles import StaticFiles
 
 FRONTEND_URL = os.environ.get(key="FRONTEND_URL", default="http://localhost:5173")
 BACKEND_URL = os.environ.get(key="BACKEND_URL", default="http://localhost:8000/api/v1")
+
+def register_default_client():
+    finalUrl = f"{BACKEND_URL}/register/client"
+
+    payload = {
+        "username": "Cliente1" ,
+        "email": "cliente1@gmail.com",
+        "password": "Password123!"
+    }
+
+    return req.post(finalUrl, json=payload)
+
+def register_default_merchant():
+    finalUrl = f"{BACKEND_URL}/register/merchant"
+
+    payload = {
+        "name": "Negoziante1",
+        "partitaIVA": "12312312312",
+        "address": "Via dei Tigli",
+        "email": "negoziante1@gmail.com",
+        "password": "Password123!"
+    }
+    
+    png_file = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x01\x00\x00\x0c\x00\x01\x04p\xcd\xa4\x00\x00\x00\x00IEND\xaeB`\x82'
+    
+    files = {
+        'image': ('merchant_logo.png', io.BytesIO(png_file), 'image/png')
+    }
+    
+    return req.post(finalUrl, data=payload, files=files)
 
 app = FastAPI()
 app.mount("/html", StaticFiles(directory="html", html=True), name="html")
@@ -103,7 +134,7 @@ async def makeRequest(
                         # L'errore con email già in uso è implementato inserendo "mariorossi@gmail.com" come email, questo genererà un errore 409
                         payload = {
                             "username": f"username{time.time_ns()}_{index}",
-                            "email": "mariorossi@gmail.com",
+                            "email": "cliente1@gmail.com",
                             "password": "Password123!"
                         }
             else:
@@ -233,17 +264,17 @@ async def distributed(
 ):
     try:
         async def send_requests():
+            interval = 1.0 / requests
+
             for _ in range(0, duration):
                 for index in range(0, requests):
                     (method, endpoint) = strOperationToEnums(operation)
+                    
                     __ = asyncio.ensure_future(
                         makeRequest(method, ReqTarget.BACKEND, endpoint, index, jwt=jwt, errorRate=errorRate)
                     )
-
-                    # response = await __
-                    # print(response.status_code)
-
-                await asyncio.sleep(1 / requests)
+                    
+                    await asyncio.sleep(interval)
 
         # Esegui l'invio delle richieste in modo asincrono per dare la risposta al browser
         asyncio.get_event_loop().create_task(send_requests())
@@ -251,6 +282,14 @@ async def distributed(
         print(e)
         return f"Error: {e}"
     return "Requests queued"
+
+@app.post("/prepare_data")
+async def prepare_data():
+    register_default_client()
+    register_default_merchant()
+    merchant_id = get_default_merchant_id()
+    #add_default_product(merchant_id)
+    #product_id = get_default_product_id(merchant_id, product_id)
 
 if __name__ == "__main__":
     PORT = int(os.environ.get(key="SIM_PORT", default=8050))

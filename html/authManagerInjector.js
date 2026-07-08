@@ -2,6 +2,19 @@ const jwtInput = document.getElementById("auth");
 const operationInput = document.getElementById("operation");
 const errorRateInput = document.getElementById("error_rate");
 
+const prepareDataButton = document.getElementById("prepare_data");
+prepareDataButton.addEventListener("click", async (e) => {
+    prepareDataButton.disabled = true;
+    const response = await fetch("/prepare_data", {
+        method: "POST",
+        body: ""
+    });
+
+    if (response.status != 200) {
+        prepareDataButton.disabled = false;
+    }
+});
+
 // Se l'utente aveva già inserito il jwt rimettilo nell'input
 let jwt = localStorage.getItem("jwt");
 if (jwt) {

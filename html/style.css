@@ -36,6 +36,13 @@ body {
     text-align: center;
 }
 
+#prepare_data {
+    grid-column: 1 / -1;
+    display: block;
+    width: 100%;
+    margin: 0 0 8px;
+}
+
 .main > div:first-child > input,
 .main > div:first-child > select {
     height: 40px;
