@@ -80,7 +80,7 @@ async def makeRequest(
 ) -> req.Response:
     headers = {}
 
-    if jwt:
+    if jwt != "":
         headers["Authorization"] = f"Bearer {jwt}"
 
     finalUrl = f"{target.value}{endpoint.value}"
