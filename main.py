@@ -203,7 +203,35 @@ async def sustained(
     errorRate: int = Form(),
 ):
     try:
+        async def send_requests():
+            for _ in range(0, duration):
+                for index in range(0, requests):
+                    (method, endpoint) = strOperationToEnums(operation)
+                    __ = asyncio.ensure_future(
+                        makeRequest(method, ReqTarget.BACKEND, endpoint, index, jwt=jwt, errorRate=errorRate)
+                    )
 
+                    # response = await __
+                    # print(response.status_code)
+
+                await asyncio.sleep(1)
+
+        # Esegui l'invio delle richieste in modo asincrono per dare la risposta al browser
+        asyncio.get_event_loop().create_task(send_requests())
+    except Exception as e:
+        print(e)
+        return f"Error: {e}"
+    return "Requests queued"
+
+@app.post("/distributed_requests")
+async def distributed(
+    requests: int = Form(),
+    duration: int = Form(),
+    jwt: str = Form(),
+    operation: str = Form(),
+    errorRate: int = Form(),
+):
+    try:
         async def send_requests():
             for _ in range(0, duration):
                 for index in range(0, requests):
@@ -223,7 +251,6 @@ async def sustained(
         print(e)
         return f"Error: {e}"
     return "Requests queued"
-
 
 if __name__ == "__main__":
     PORT = int(os.environ.get(key="SIM_PORT", default=8050))
