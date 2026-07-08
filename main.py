@@ -287,7 +287,7 @@ async def distributed(
 async def prepare_data():
     register_default_client()
     register_default_merchant()
-    merchant_id = get_default_merchant_id()
+    #merchant_id = get_default_merchant_id()
     #add_default_product(merchant_id)
     #product_id = get_default_product_id(merchant_id, product_id)
 
