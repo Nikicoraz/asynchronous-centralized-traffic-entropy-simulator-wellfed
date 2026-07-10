@@ -3,6 +3,8 @@ import os
 import time
 import random
 import io
+import base64
+import io
 
 from enum import Enum
 
@@ -13,6 +15,9 @@ from fastapi.param_functions import Form
 from fastapi.responses import HTMLResponse
 from starlette.responses import FileResponse
 from starlette.staticfiles import StaticFiles
+from PIL import Image
+from pyzbar.pyzbar import decode
+
 
 FRONTEND_URL = os.environ.get(key="FRONTEND_URL", default="http://localhost:5173")
 BACKEND_URL = os.environ.get(key="BACKEND_URL", default="http://localhost:8000/api/v1")
@@ -156,6 +161,12 @@ def strOperationToEnums(operation: str) -> (ReqType, ReqEndpoint):
 
     raise ModuleNotFoundError
 
+def decode_transaction_qrcode(qrcode: str) -> str:
+    _, b64 = qrcode.split(",", 1)
+    img = Image.open(io.BytesIO(base64.b64decode(b64)))
+
+    return decode(img)[0].data.decode()
+
 async def completeTransaction(transaction_token: str, jwt: str):
     delay = random.randint(1, 5)
     await asyncio.sleep(delay)
@@ -168,7 +179,6 @@ async def completeTransaction(transaction_token: str, jwt: str):
     
     try:
         req.post(finalUrl, headers=headers, json={"token": transaction_token})
-        print(f"Transaction completed")
     except Exception as e:
         print(f"Error while closing pending transaction: {e}")
 
@@ -259,10 +269,10 @@ async def makeRequest(
             return req.post(finalUrl, headers=headers, json=payload)
         else:
             response_begin = req.post(finalUrl, headers=headers, json=payload)
-            print(response_begin.status_code)
             
             if response_begin.status_code == 200:
-                transaction_token = response_begin.text
+                transaction_image = response_begin.text
+                transaction_token = decode_transaction_qrcode(transaction_image)
                 asyncio.create_task(completeTransaction(transaction_token, DataProxy.get_client_jwt()))
             
             return response_begin
