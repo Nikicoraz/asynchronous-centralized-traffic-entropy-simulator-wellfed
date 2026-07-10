@@ -348,17 +348,16 @@ async def distributed(
 ):
     try:
         async def send_requests():
-            interval = 1.0 / requests
+            interval = duration / requests
 
-            for _ in range(0, duration):
-                for index in range(0, requests):
-                    (method, endpoint) = strOperationToEnums(operation)
-                    
-                    __ = asyncio.ensure_future(
-                        makeRequest(method, ReqTarget.BACKEND, endpoint, index, errorRate=errorRate)
-                    )
-                    
-                    await asyncio.sleep(interval)
+            for index in range(0, requests):
+                (method, endpoint) = strOperationToEnums(operation)
+                
+                __ = asyncio.ensure_future(
+                    makeRequest(method, ReqTarget.BACKEND, endpoint, index, errorRate=errorRate)
+                )
+                
+                await asyncio.sleep(interval)
 
         # Esegui l'invio delle richieste in modo asincrono per dare la risposta al browser
         asyncio.get_event_loop().create_task(send_requests())
