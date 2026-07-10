@@ -21,6 +21,7 @@ from pyzbar.pyzbar import decode
 
 FRONTEND_URL = os.environ.get(key="FRONTEND_URL", default="http://localhost:5173")
 BACKEND_URL = os.environ.get(key="BACKEND_URL", default="http://localhost:8000/api/v1")
+MAX_TRANSACTION_TIMEOUT = 100
 
 CLIENT_DETAILS = {
     "username": "Cliente1" ,
@@ -168,7 +169,7 @@ def decode_transaction_qrcode(qrcode: str) -> str:
     return decode(img)[0].data.decode()
 
 async def completeTransaction(transaction_token: str, jwt: str):
-    delay = random.randint(1, 5)
+    delay = random.randint(1, MAX_TRANSACTION_TIMEOUT)
     await asyncio.sleep(delay)
     
     headers = {}
