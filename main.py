@@ -35,34 +35,46 @@ PRODUCT_DETAILS = {
     "name": "Prodotto1",
     "description": "Descrizione del prodotto 1",
     "origin": "Italia",
-    "points": 10,
-    "image": "https://via.placeholder.com/150"
+    "points": 10
 }
 
-class MerchantProxy():
-    id = None
-    jwt = None
+class DataProxy():
+    merchant_id = None
+    merchant_jwt = None
+    
+    client_jwt = None
     
     default_product_id = None
     
     @staticmethod
-    def get_id_and_jwt():
-        if MerchantProxy.id is None or MerchantProxy.jwt is None:
-            print("Tocca fare richiesta")
+    def get_merchant_id_and_jwt():
+        if DataProxy.merchant_id is None or DataProxy.merchant_jwt is None:
             finalUrl = f"{BACKEND_URL}/login"
             response = req.post(finalUrl, json={"email": MERCHANT_DETAILS["email"], "password": MERCHANT_DETAILS["password"]})
             if response.status_code == 200:
-                MerchantProxy.id = response.headers.get("location").split("/")[-1]
-                MerchantProxy.jwt = response.json().get("token")
+                DataProxy.merchant_id = response.headers.get("location").split("/")[-1]
+                DataProxy.merchant_jwt = response.json().get("token")
             else:
                 raise Exception(f"Failed to retrieve merchant ID. Status code: {response.status_code}, Response: {response.text}")
             
-        return (MerchantProxy.id, MerchantProxy.jwt)
+        return (DataProxy.merchant_id, DataProxy.merchant_jwt)
+    
+    @staticmethod
+    def get_client_jwt():
+        if DataProxy.client_jwt is None:
+            finalUrl = f"{BACKEND_URL}/login"
+            response = req.post(finalUrl, json={"email": CLIENT_DETAILS["email"], "password": CLIENT_DETAILS["password"]})
+            if response.status_code == 200:
+                DataProxy.client_jwt = response.json().get("token")
+            else:
+                raise Exception(f"Failed to retrieve client JWT. Status code: {response.status_code}, Response: {response.text}")
+            
+        return DataProxy.client_jwt
     
     @staticmethod
     def get_default_product_id():
-        if MerchantProxy.default_product_id is None:
-            merchant_id, _ = MerchantProxy.get_id_and_jwt()
+        if DataProxy.default_product_id is None:
+            merchant_id, _ = DataProxy.get_merchant_id_and_jwt()
             finalUrl = f"{BACKEND_URL}/shops/{merchant_id}/products"
             response = req.get(finalUrl)
             if response.status_code == 200:
@@ -93,7 +105,7 @@ def register_default_merchant():
 def add_default_product(merchant_id, jwt):
     # Se il prodotto esiste già non fare nulla
     try:
-        MerchantProxy.get_default_product_id()
+        DataProxy.get_default_product_id()
         return "Product already exists"
     except Exception:   
         pass
@@ -156,6 +168,7 @@ async def completeTransaction(transaction_token: str, jwt: str):
     
     try:
         req.post(finalUrl, headers=headers, json={"token": transaction_token})
+        print(f"Transaction completed")
     except Exception as e:
         print(f"Error while closing pending transaction: {e}")
 
@@ -166,14 +179,14 @@ async def makeRequest(
     target: ReqTarget, 
     endpoint: ReqEndpoint, 
     index: int = 0,
-    jwt: str = "", 
     payload: dict = None,
     errorRate: int = 0
 ) -> req.Response:
     headers = {}
 
-    if jwt != "":
-        headers["Authorization"] = f"Bearer {jwt}"
+    # --> Siccome ora abbiamo utenti di default, possiamo ricavarci noi i jwt
+    # if jwt != "":
+    #     headers["Authorization"] = f"Bearer {jwt}"
 
     finalUrl = f"{target.value}{endpoint.value}"
     
@@ -220,6 +233,7 @@ async def makeRequest(
 
 
         case ReqEndpoint.TRANSACTION_BEGIN:
+            headers = {"Authorization": f"Bearer {DataProxy.get_merchant_id_and_jwt()[1]}"}
             if error_trigger:
                 # L'errore di prodotto invalido è implementato inserendo un productID inesistente, questo genererà un errore 400
                 payload = [
@@ -231,7 +245,7 @@ async def makeRequest(
             else:
                 payload = [
                     {
-                        "productID": "6a4a919a356925890dcfc66e", # Qui va inserito l'id del prodotto che mettiamo nel DB
+                        "productID": DataProxy.get_default_product_id(), # Qui va inserito l'id del prodotto che mettiamo nel DB
                         "quantity": 1
                     }
                 ]
@@ -245,10 +259,11 @@ async def makeRequest(
             return req.post(finalUrl, headers=headers, json=payload)
         else:
             response_begin = req.post(finalUrl, headers=headers, json=payload)
+            print(response_begin.status_code)
             
             if response_begin.status_code == 200:
                 transaction_token = response_begin.text
-                asyncio.create_task(completeTransaction(transaction_token, jwt))
+                asyncio.create_task(completeTransaction(transaction_token, DataProxy.get_client_jwt()))
             
             return response_begin
 
@@ -264,7 +279,6 @@ async def root():
 @app.post("/instant_requests")
 async def instant(
     requests: int = Form(), 
-    jwt: str = Form(),
     operation: str = Form(),
     errorRate: int = Form(),
 ):
@@ -272,7 +286,7 @@ async def instant(
         for index in range(0, requests):
             (method, endpoint) = strOperationToEnums(operation)
             _ = asyncio.ensure_future(
-                makeRequest(method, ReqTarget.BACKEND, endpoint, index, jwt=jwt, errorRate=errorRate)
+                makeRequest(method, ReqTarget.BACKEND, endpoint, index, errorRate=errorRate)
             )
 
             # Decommentare le linee seguenti per vedere il codice di stato e il codice html della risposta
@@ -291,7 +305,6 @@ async def instant(
 async def sustained(
     requests: int = Form(),
     duration: int = Form(),
-    jwt: str = Form(),
     operation: str = Form(),
     errorRate: int = Form(),
 ):
@@ -301,7 +314,7 @@ async def sustained(
                 for index in range(0, requests):
                     (method, endpoint) = strOperationToEnums(operation)
                     __ = asyncio.ensure_future(
-                        makeRequest(method, ReqTarget.BACKEND, endpoint, index, jwt=jwt, errorRate=errorRate)
+                        makeRequest(method, ReqTarget.BACKEND, endpoint, index, errorRate=errorRate)
                     )
 
                     # response = await __
@@ -320,7 +333,6 @@ async def sustained(
 async def distributed(
     requests: int = Form(),
     duration: int = Form(),
-    jwt: str = Form(),
     operation: str = Form(),
     errorRate: int = Form(),
 ):
@@ -333,7 +345,7 @@ async def distributed(
                     (method, endpoint) = strOperationToEnums(operation)
                     
                     __ = asyncio.ensure_future(
-                        makeRequest(method, ReqTarget.BACKEND, endpoint, index, jwt=jwt, errorRate=errorRate)
+                        makeRequest(method, ReqTarget.BACKEND, endpoint, index, errorRate=errorRate)
                     )
                     
                     await asyncio.sleep(interval)
@@ -351,7 +363,7 @@ async def prepare_data():
     register_default_merchant()
     
     # Recupera l'ID del merchant e il JWT per aggiungere il prodotto predefinito
-    merchant_id, jwt = MerchantProxy.get_id_and_jwt()
+    merchant_id, jwt = DataProxy.get_merchant_id_and_jwt()
     add_default_product(merchant_id, jwt)
 
 if __name__ == "__main__":
