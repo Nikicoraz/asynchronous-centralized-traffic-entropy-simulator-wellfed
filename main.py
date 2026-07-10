@@ -17,27 +17,70 @@ from starlette.staticfiles import StaticFiles
 FRONTEND_URL = os.environ.get(key="FRONTEND_URL", default="http://localhost:5173")
 BACKEND_URL = os.environ.get(key="BACKEND_URL", default="http://localhost:8000/api/v1")
 
+CLIENT_DETAILS = {
+    "username": "Cliente1" ,
+    "email": "cliente1@gmail.com",
+    "password": "Password123!"
+}
+
+MERCHANT_DETAILS = {
+    "name": "Negoziante1",
+    "partitaIVA": "12312312312",
+    "address": "Via dei Tigli",
+    "email": "negoziante1@gmail.com",
+    "password": "Password123!"
+}
+
+PRODUCT_DETAILS = {
+    "name": "Prodotto1",
+    "description": "Descrizione del prodotto 1",
+    "origin": "Italia",
+    "points": 10,
+    "image": "https://via.placeholder.com/150"
+}
+
+class MerchantProxy():
+    id = None
+    jwt = None
+    
+    default_product_id = None
+    
+    @staticmethod
+    def get_id_and_jwt():
+        if MerchantProxy.id is None or MerchantProxy.jwt is None:
+            print("Tocca fare richiesta")
+            finalUrl = f"{BACKEND_URL}/login"
+            response = req.post(finalUrl, json={"email": MERCHANT_DETAILS["email"], "password": MERCHANT_DETAILS["password"]})
+            if response.status_code == 200:
+                MerchantProxy.id = response.headers.get("location").split("/")[-1]
+                MerchantProxy.jwt = response.json().get("token")
+            else:
+                raise Exception(f"Failed to retrieve merchant ID. Status code: {response.status_code}, Response: {response.text}")
+            
+        return (MerchantProxy.id, MerchantProxy.jwt)
+    
+    @staticmethod
+    def get_default_product_id():
+        if MerchantProxy.default_product_id is None:
+            merchant_id, _ = MerchantProxy.get_id_and_jwt()
+            finalUrl = f"{BACKEND_URL}/shops/{merchant_id}/products"
+            response = req.get(finalUrl)
+            if response.status_code == 200:
+                products = response.json()
+                if products:
+                    return products[0]["id"]
+                else:
+                    raise Exception("No products found for the merchant.")
+            else:
+                raise Exception(f"Failed to retrieve products. Status code: {response.status_code}, Response: {response.text}")
+
 def register_default_client():
     finalUrl = f"{BACKEND_URL}/register/client"
 
-    payload = {
-        "username": "Cliente1" ,
-        "email": "cliente1@gmail.com",
-        "password": "Password123!"
-    }
-
-    return req.post(finalUrl, json=payload)
+    return req.post(finalUrl, json=CLIENT_DETAILS)
 
 def register_default_merchant():
     finalUrl = f"{BACKEND_URL}/register/merchant"
-
-    payload = {
-        "name": "Negoziante1",
-        "partitaIVA": "12312312312",
-        "address": "Via dei Tigli",
-        "email": "negoziante1@gmail.com",
-        "password": "Password123!"
-    }
     
     png_file = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x01\x00\x00\x0c\x00\x01\x04p\xcd\xa4\x00\x00\x00\x00IEND\xaeB`\x82'
     
@@ -45,7 +88,25 @@ def register_default_merchant():
         'image': ('merchant_logo.png', io.BytesIO(png_file), 'image/png')
     }
     
-    return req.post(finalUrl, data=payload, files=files)
+    return req.post(finalUrl, data=MERCHANT_DETAILS, files=files)
+
+def add_default_product(merchant_id, jwt):
+    # Se il prodotto esiste già non fare nulla
+    try:
+        MerchantProxy.get_default_product_id()
+        return "Product already exists"
+    except Exception:   
+        pass
+    
+    finalUrl = f"{BACKEND_URL}/shops/{merchant_id}/products"
+    
+    png_file = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x01\x00\x00\x0c\x00\x01\x04p\xcd\xa4\x00\x00\x00\x00IEND\xaeB`\x82'
+    
+    files = {
+        'image': ('product_image.png', io.BytesIO(png_file), 'image/png')
+    }
+    
+    return req.post(finalUrl, data=PRODUCT_DETAILS, files=files, headers={"Authorization": f"Bearer {jwt}"})
 
 app = FastAPI()
 app.mount("/html", StaticFiles(directory="html", html=True), name="html")
@@ -134,8 +195,8 @@ async def makeRequest(
                         # L'errore con email già in uso è implementato inserendo "mariorossi@gmail.com" come email, questo genererà un errore 409
                         payload = {
                             "username": f"username{time.time_ns()}_{index}",
-                            "email": "cliente1@gmail.com",
-                            "password": "Password123!"
+                            "email": CLIENT_DETAILS["email"],  # Email già in uso
+                            "password": CLIENT_DETAILS["password"]
                         }
             else:
                 payload = {
@@ -153,8 +214,8 @@ async def makeRequest(
                 }
             else:
                 payload = {
-                    "email": "cliente1@gmail.com",
-                    "password": "Password123!"
+                    "email": CLIENT_DETAILS["email"],
+                    "password": CLIENT_DETAILS["password"]
                 }
 
 
@@ -191,6 +252,7 @@ async def makeRequest(
             
             return response_begin
 
+    else:
         raise NotImplementedError("Request type not yet implemented")
 
 
@@ -214,10 +276,10 @@ async def instant(
             )
 
             # Decommentare le linee seguenti per vedere il codice di stato e il codice html della risposta
-            response = await _
-            print(response.status_code)
-            print(response.request.headers)
-            print(response.text)
+            # response = await _
+            # print(response.status_code)
+            # print(response.request.headers)
+            # print(response.text)
 
     except Exception as e:
         print(e)
@@ -287,9 +349,10 @@ async def distributed(
 async def prepare_data():
     register_default_client()
     register_default_merchant()
-    #merchant_id = get_default_merchant_id()
-    #add_default_product(merchant_id)
-    #product_id = get_default_product_id(merchant_id, product_id)
+    
+    # Recupera l'ID del merchant e il JWT per aggiungere il prodotto predefinito
+    merchant_id, jwt = MerchantProxy.get_id_and_jwt()
+    add_default_product(merchant_id, jwt)
 
 if __name__ == "__main__":
     PORT = int(os.environ.get(key="SIM_PORT", default=8050))
