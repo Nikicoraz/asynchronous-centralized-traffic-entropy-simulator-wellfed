@@ -49,5 +49,3 @@ Array.from(document.getElementsByTagName("form")).forEach((form) => {
     e.formData.append("errorRate", isNaN(parsedErrorRate) ? 0 : parsedErrorRate);
   });
 });
-
-console.log(document.getElementsByTagName("form"));
