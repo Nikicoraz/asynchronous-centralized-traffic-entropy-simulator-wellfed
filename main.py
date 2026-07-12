@@ -380,4 +380,4 @@ if __name__ == "__main__":
     reload = False
     if bool(os.environ.get("DEBUG", False)):
         reload = True
-    uvicorn.run("main:app", port=PORT, reload=reload)
+    uvicorn.run("main:app", port=PORT, reload=reload, host="0.0.0.0")
