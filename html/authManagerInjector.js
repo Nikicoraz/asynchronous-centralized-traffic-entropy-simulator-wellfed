@@ -38,14 +38,60 @@ errorRateInput.addEventListener("change", (e) => {
     errorRate = errorRateInput.value;
 });
 
-// Intercetta richieste form
-Array.from(document.getElementsByTagName("form")).forEach((form) => {
-  form.addEventListener("formdata", (e) => {
-    e.preventDefault();
+document.querySelectorAll("form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault(); 
 
-    e.formData.append("operation", operation);
-    e.formData.append("errorRate", parseInt(errorRate));
-    const parsedErrorRate = parseInt(errorRate, 10);
-    e.formData.append("errorRate", isNaN(parsedErrorRate) ? 0 : parsedErrorRate);
-  });
+        const statusMessage = document.getElementById('status');
+        const actionUrl = form.getAttribute("action");
+
+        const rawFormData = new FormData(form);
+        const formData = new URLSearchParams();
+
+        for (const [key, value] of rawFormData.entries()) {
+            formData.append(key, value);
+        }
+
+        const currentOperation = operationInput.value;
+        const parsedErrorRate = parseInt(errorRateInput.value);
+        const currentErrorRate = isNaN(parsedErrorRate) ? 0 : parsedErrorRate;
+
+        formData.append('operation', currentOperation);
+        formData.append('errorRate', currentErrorRate);
+
+        statusMessage.style.transition = "none";
+        statusMessage.style.opacity = "1";
+        statusMessage.style.display = "block"; 
+
+        try {
+            const response = await fetch(actionUrl, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                statusMessage.style.color = "green";
+                statusMessage.textContent = "Requests queued";
+            } else {
+                statusMessage.style.color = "red";
+                statusMessage.textContent = `Server Error (${response.status})`;
+            }
+        } catch (error) {
+            statusMessage.style.color = "red";
+            statusMessage.textContent = "Error during request";
+            console.error("Fetch error:", error);
+        }
+
+        setTimeout(() => {
+            statusMessage.style.transition = "opacity 0.8s ease";
+            statusMessage.style.opacity = "0";
+
+            setTimeout(() => {
+                if (statusMessage.style.opacity === "0") {
+                    statusMessage.style.display = "none";
+                }
+            }, 800);
+
+        }, 2000);
+    });
 });
