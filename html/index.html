@@ -27,7 +27,7 @@
             <div class="requests">
                 <div>
                     <h3>Instant traffic</h3>
-                    <form action="/instant_requests" , method="POST">
+                    <form id="instantaneous" action="/instant_requests">
                         <input
                             type="number"
                             placeholder="Number of requests"
@@ -38,7 +38,7 @@
                 </div>
                 <div>
                     <h3>Sustained traffic</h3>
-                    <form action="/sustained_requests" method="POST">
+                    <form id="sustained" action="/sustained_requests">
                         <input
                             type="number"
                             placeholder="Number of requests per second"
@@ -54,7 +54,7 @@
                 </div>
                 <div>
                     <h3>Distributed traffic over time</h3>
-                    <form action="/distributed_requests" method="POST">
+                    <form id="distributed" action="/distributed_requests">
                         <input
                             type="number"
                             placeholder="Total number of requests"
@@ -69,6 +69,7 @@
                     </form>
                 </div>
             </div>
+            <div id="status" style="display:none"></div>
         </div>
         <script src="/html/authManagerInjector.js"></script>
     </body>
