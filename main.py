@@ -4,6 +4,7 @@ import time
 import random
 import io
 import base64
+import pathlib
 
 from enum import Enum
 
@@ -21,6 +22,7 @@ from pyzbar.pyzbar import decode
 FRONTEND_URL = os.environ.get(key="FRONTEND_URL", default="http://localhost:5173")
 BACKEND_URL = os.environ.get(key="BACKEND_URL", default="http://localhost:8000/api/v1")
 MAX_TRANSACTION_TIMEOUT = 100
+IMAGES_DIR = pathlib.Path(__file__).parent / "images"
 
 CLIENT_DETAILS = {
     "username": "Cliente1" ,
@@ -99,13 +101,13 @@ def register_default_client():
 def register_default_merchant():
     finalUrl = f"{BACKEND_URL}/register/merchant"
     
-    png_file = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x01\x00\x00\x0c\x00\x01\x04p\xcd\xa4\x00\x00\x00\x00IEND\xaeB`\x82'
+    image_path = IMAGES_DIR / "merchant_image.jpg"
+    with open(image_path, 'rb') as f:
+        files = {
+            'image': ('merchant_image.jpg', f, 'image/jpeg')
+        }
     
-    files = {
-        'image': ('merchant_logo.png', io.BytesIO(png_file), 'image/png')
-    }
-    
-    return req.post(finalUrl, data=MERCHANT_DETAILS, files=files)
+        return req.post(finalUrl, data=MERCHANT_DETAILS, files=files)
 
 def add_default_product(merchant_id, jwt):
     # Se il prodotto esiste già non fare nulla
@@ -117,13 +119,13 @@ def add_default_product(merchant_id, jwt):
     
     finalUrl = f"{BACKEND_URL}/shops/{merchant_id}/products"
     
-    png_file = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x01\x00\x00\x0c\x00\x01\x04p\xcd\xa4\x00\x00\x00\x00IEND\xaeB`\x82'
+    image_path = IMAGES_DIR / "product_image.jpg"
+    with open(image_path, 'rb') as f:
+        files = {
+            'image': ('product_image.jpg', f, 'image/jpeg')
+        }
     
-    files = {
-        'image': ('product_image.png', io.BytesIO(png_file), 'image/png')
-    }
-    
-    return req.post(finalUrl, data=PRODUCT_DETAILS, files=files, headers={"Authorization": f"Bearer {jwt}"})
+        return req.post(finalUrl, data=PRODUCT_DETAILS, files=files, headers={"Authorization": f"Bearer {jwt}"})
 
 app = FastAPI()
 app.mount("/html", StaticFiles(directory="html", html=True), name="html")
